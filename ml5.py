@@ -103,5 +103,5 @@ def main():
         st.write(f"Recall (Positive): {recall_pos:.2f}")
         st.write(f"Recall (Negative): {recall_neg:.2f}")
 
-if name == "main":
+if _name_ == "_main_":
     main()
