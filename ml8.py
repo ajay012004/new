@@ -40,7 +40,7 @@ def plot_clusters(X, labels, centers, title, xlabel, ylabel):
 
 # Main Streamlit app
 def main():
-    st.title('CLOUD STROMS - K-NEAREST NEIGHBOUR ALGORITHM')
+    st.title('CYBER CENTURIONS - K-NEAREST NEIGHBOUR ALGORITHM')
 
     # Sidebar to input parameters
     st.sidebar.header('Parameters')
