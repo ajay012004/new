@@ -47,7 +47,8 @@ class CandidateElimination:
         return self.S, self.G
 
 def main():
-    st.title("Candidate Elimination Algorithm")
+    st.title("Team: Cyber Centurions")
+    st.subheader("Topic: Candidate Elimination Algorithm")
 
     # Example dataset
     data = [
