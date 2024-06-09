@@ -1,69 +1,93 @@
 import streamlit as st
-import pandas as pd
-from sklearn.tree import DecisionTreeClassifier, export_text
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+import numpy as np
 
+# Node class for the decision tree
+class Node:
+    def _init_(self, feature=None, threshold=None, left=None, right=None, value=None):
+        self.feature = feature          # Index of feature to split on
+        self.threshold = threshold      # Threshold value for numerical features
+        self.left = left                # Left subtree
+        self.right = right              # Right subtree
+        self.value = value              # Majority class label for leaf node
+
+# Function to calculate entropy
+def entropy(y):
+    _, counts = np.unique(y, return_counts=True)
+    probabilities = counts / len(y)
+    return -np.sum(probabilities * np.log2(probabilities + 1e-10))
+
+# Function to find the best split
+def find_best_split(X, y):
+    best_entropy = float('inf')
+    best_feature = None
+    best_threshold = None
+    
+    # Iterate over each feature
+    for feature in range(X.shape[1]):
+        thresholds = np.unique(X[:, feature])
+        for threshold in thresholds:
+            left_indices = np.where(X[:, feature] <= threshold)[0]
+            right_indices = np.where(X[:, feature] > threshold)[0]
+            
+            left_entropy = entropy(y[left_indices])
+            right_entropy = entropy(y[right_indices])
+            total_entropy = (len(left_indices) * left_entropy + len(right_indices) * right_entropy) / len(y)
+            
+            if total_entropy < best_entropy:
+                best_entropy = total_entropy
+                best_feature = feature
+                best_threshold = threshold
+    
+    return best_feature, best_threshold
+
+# Function to build the decision tree
+def build_tree(X, y, max_depth):
+    # Check for stopping criteria
+    if max_depth == 0 or len(np.unique(y)) == 1:
+        return Node(value=np.argmax(np.bincount(y)))
+    
+    best_feature, best_threshold = find_best_split(X, y)
+    
+    if best_feature is None:
+        return Node(value=np.argmax(np.bincount(y)))
+    
+    # Split the data
+    left_indices = np.where(X[:, best_feature] <= best_threshold)[0]
+    right_indices = np.where(X[:, best_feature] > best_threshold)[0]
+    
+    left_subtree = build_tree(X[left_indices], y[left_indices], max_depth - 1)
+    right_subtree = build_tree(X[right_indices], y[right_indices], max_depth - 1)
+    
+    return Node(feature=best_feature, threshold=best_threshold, left=left_subtree, right=right_subtree)
+
+# Function to predict using the decision tree
+def predict(tree, X):
+    if tree.value is not None:
+        return tree.value
+    
+    if X[tree.feature] <= tree.threshold:
+        return predict(tree.left, X)
+    else:
+        return predict(tree.right, X)
+
+# Main Streamlit app
 def main():
-    st.title("ID3 Algorithm Demo")
+    st.title(' Cybe Centurions ID3 Algorithm Demo')
+    
+    # Dummy dataset
+    X = np.array([[2, 3], [1, 2], [3, 1], [4, 2], [3, 5], [6, 5]])
+    y = np.array([0, 0, 1, 1, 0, 1])
+    
+    # Build the decision tree
+    max_depth = st.sidebar.slider('Max Depth', min_value=1, max_value=10, value=2)
+    tree = build_tree(X, y, max_depth)
+    
+    # Test the decision tree
+    test_point = st.sidebar.text_input('Test Point (comma-separated)', '3,4')
+    test_point = np.array(list(map(float, test_point.split(','))))
+    
+    prediction = predict(tree, test_point)
+    st.write(f'Prediction for test point {test_point}: Class {prediction}')
 
-    # Upload dataset
-    st.subheader("Upload Dataset")
-    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
-
-    if uploaded_file is not None:
-        try:
-            data = pd.read_csv(uploaded_file)
-            st.write(data)
-
-            # Choose target column
-            target_column = st.selectbox("Select the target column", data.columns)
-
-            # Check for missing values
-            if data.isnull().values.any():
-                st.warning("Dataset contains missing values. Please preprocess the data before proceeding.")
-                return
-
-            # Check for non-numeric columns
-            non_numeric_cols = data.select_dtypes(exclude=['number']).columns.tolist()
-            if non_numeric_cols:
-                st.warning(f"The following non-numeric columns were detected: {', '.join(non_numeric_cols)}. Please preprocess the data before proceeding.")
-                return
-
-            # Split data into features and target
-            X = data.drop(columns=[target_column])
-            y = data[target_column]
-
-            # Train-test split
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-            # Create decision tree model
-            clf = DecisionTreeClassifier(criterion="entropy")
-            clf.fit(X_train, y_train)
-
-            # Display decision tree rules
-            st.subheader("Decision Tree Rules")
-            rules = export_text(clf, feature_names=X.columns.tolist())
-            st.text_area("Decision Tree Rules", rules, height=300)
-
-            # Make predictions
-            st.subheader("Make Predictions")
-            new_data = {}
-            for feature in X.columns:
-                new_data[feature] = st.number_input(f"Enter {feature}", value=0.0)
-
-            if st.button("Predict"):
-                instance = pd.DataFrame([new_data])
-                prediction = clf.predict(instance)
-                st.success(f"The predicted class is {prediction[0]}")
-
-            # Evaluate model
-            st.subheader("Model Evaluation")
-            accuracy = accuracy_score(y_test, clf.predict(X_test))
-            st.write(f"Accuracy: {accuracy:.2f}")
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-
-if __name__ == "__main__":
-    main()
+if _name_ == '_main_':
+    main()
