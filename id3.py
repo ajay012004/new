@@ -1,58 +1,49 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import load_iris
+from sklearn.tree import export_text
 
-def generate_synthetic_data():
-    # Generate synthetic data
-    np.random.seed(42)
-    n_samples = 100
-    n_features = 4
-    X = np.random.randn(n_samples, n_features)
-    y = np.random.randint(0, 3, n_samples)  # Three classes
-    df = pd.DataFrame(X, columns=[f"Feature_{i+1}" for i in range(n_features)])
-    df['target'] = y
-    return df
-
-def train_model(df):
-    X = df.drop(columns=['target'])
-    y = df['target']
-    # Dummy model for demonstration
-    class_counts = y.value_counts().to_dict()
-    most_common_class = max(class_counts, key=class_counts.get)
-    return most_common_class
-
-def evaluate_model(df, most_common_class):
-    y_true = df['target']
-    y_pred = np.full_like(y_true, most_common_class)
-    accuracy = np.mean(y_true == y_pred)
-    return accuracy, y_pred
-
+# Define the Streamlit app
 def main():
-    st.title("Dummy Classifier")
-    st.write("This app demonstrates a dummy classifier using synthetic data.")
+    st.title("TEAM: Cyber - Centurions")
+    st.subheader("TOPIC: Dummy Classifier")
+    st.title("ID3 Algorithm Demo")
 
-    # Generate synthetic data
-    df = generate_synthetic_data()
+    # Upload dataset
+    st.subheader("Upload Dataset")
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    if uploaded_file is not None:
+        data = pd.read_csv(uploaded_file)
+        st.write(data)
 
-    # Display dataset
-    st.subheader("Synthetic Dataset")
-    st.write(df)
+        # Preprocessing: Convert categorical variables into numerical
+        data = pd.get_dummies(data)
 
-    # Train model
-    most_common_class = train_model(df)
+        # Model Training
+        st.subheader("Training")
+        X = data.drop(columns=['target'])
+        y = data['target']
+        clf = DecisionTreeClassifier(criterion="entropy")
+        clf.fit(X, y)
 
-    # Display most common class
-    st.subheader("Most Common Class")
-    st.write("The most common class in the dataset is:", most_common_class)
+        # Display decision tree rules
+        st.subheader("Decision Tree Rules")
+        rules = export_text(clf, feature_names=X.columns.tolist())
+        st.text_area("Decision Tree Rules", rules, height=300)
 
-    # Evaluate model
-    accuracy, y_pred = evaluate_model(df, most_common_class)
-    st.subheader("Model Evaluation")
-    st.write("Accuracy:", accuracy)
+        # Make a prediction
+        st.subheader("Make Prediction")
+        input_features = {}
+        for feature in X.columns:
+            input_features[feature] = st.number_input(f"Enter {feature}", value=0.0)
 
-    # Display predicted values
-    st.subheader("Predicted Values")
-    st.write("Predicted values:", y_pred)
+        if st.button("Predict"):
+            instance = pd.DataFrame([input_features])
+            prediction = clf.predict(instance)
+            st.success(f"The predicted class is {prediction[0]}")
 
+# Run the app
 if __name__ == "__main__":
     main()
