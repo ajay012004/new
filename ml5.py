@@ -81,7 +81,8 @@ def evaluate_model(df, p_pos, p_neg, p_word_given_pos, p_word_given_neg):
 
 # Streamlit app
 def main():
-    st.title("Cyber - Centurions Naive Bayes Document Classification")
+    st.title("Cyber - Centurions: 
+    Naive Bayes Document Classification")
 
     # Display dataset
     df = preprocess_data(data)
