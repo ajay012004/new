@@ -1,79 +1,63 @@
-
 import streamlit as st
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+import numpy as np
 import pandas as pd
-from pgmpy.models import BayesianModel
-from pgmpy.estimators import MaximumLikelihoodEstimator
-from pgmpy.inference import VariableElimination
 
-def main():
-    st.title('Heart Disease Prediction')
+# Define the smaller Iris dataset
+iris_data = {
+    "data": np.array([
+        [5.1, 3.5, 1.4, 0.2],
+        [4.9, 3.0, 1.4, 0.2],
+        [4.7, 3.2, 1.3, 0.2],
+        [4.6, 3.1, 1.5, 0.2],
+        [5.0, 3.6, 1.4, 0.2],
+        [5.4, 3.9, 1.7, 0.4],
+        [4.6, 3.4, 1.4, 0.3],
+        [5.0, 3.4, 1.5, 0.2],
+        [4.4, 2.9, 1.4, 0.2],
+        [4.9, 3.1, 1.5, 0.1]
+    ]),
+    "target": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+    "target_names": np.array(['setosa'])
+}
 
-    # Load the dataset
-    try:
-        data = pd.read_csv(r"C:\Users\TUF\Desktop\ML7\heartdisease.csv")
-        heart_disease = pd.DataFrame(data)
-    except FileNotFoundError:
-        st.error("Error: Dataset 'heartdisease.csv' not found. Make sure the file exists and is in the correct directory.")
-        return
-    except Exception as e:
-        st.error(f"An error occurred while loading the dataset: {e}")
-        return
+# Create a DataFrame
+df = pd.DataFrame(data=iris_data['data'], columns=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
 
-    # Define the Bayesian Network model
-    model = BayesianModel([
-        ('age', 'Lifestyle'),
-        ('Gender', 'Lifestyle'),
-        ('Family', 'heartdisease'),
-        ('diet', 'cholestrol'),
-        ('Lifestyle', 'diet'),
-        ('cholestrol', 'heartdisease'),
-        ('diet', 'cholestrol')
-    ])
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(iris_data['data'], iris_data['target'], test_size=0.2, random_state=42)
 
-    # Fit the model using Maximum Likelihood Estimator
-    model.fit(heart_disease, estimator=MaximumLikelihoodEstimator)
+# Initialize the KNN classifier
+k = 3
+knn_classifier = KNeighborsClassifier(n_neighbors=k)
+knn_classifier.fit(X_train, y_train)
 
-    # Create a VariableElimination object for inference
-    HeartDisease_infer = VariableElimination(model)
+# Streamlit app
+st.title('Iris Flower Species Prediction')
+st.sidebar.header('User Input Parameters')
 
-    # Display user input fields
-    st.write('Enter the following values for prediction:')
-    age = st.number_input('Age', min_value=0, max_value=100, step=1)
-    gender = st.selectbox('Gender', ['Male', 'Female'])
-    family_history = st.selectbox('Family History', ['Yes', 'No'])
-    diet = st.selectbox('Diet', ['High', 'Medium'])
-    lifestyle = st.selectbox('Lifestyle', ['Athlete', 'Active', 'Moderate', 'Sedentary'])
-    cholesterol = st.selectbox('Cholesterol', ['High', 'Borderline', 'Normal'])
+# Function to get user inputs
+def get_user_input():
+    sepal_length = st.sidebar.slider('Sepal length', float(df['sepal_length'].min()), float(df['sepal_length'].max()), float(df['sepal_length'].mean()))
+    sepal_width = st.sidebar.slider('Sepal width', float(df['sepal_width'].min()), float(df['sepal_width'].max()), float(df['sepal_width'].mean()))
+    petal_length = st.sidebar.slider('Petal length', float(df['petal_length'].min()), float(df['petal_length'].max()), float(df['petal_length'].mean()))
+    petal_width = st.sidebar.slider('Petal width', float(df['petal_width'].min()), float(df['petal_width'].max()), float(df['petal_width'].mean()))
+    return np.array([[sepal_length, sepal_width, petal_length, petal_width]])
 
-    # Convert user inputs to appropriate values for inference
-    gender = 0 if gender == 'Male' else 1
-    family_history = 1 if family_history == 'Yes' else 0
-    diet = 0 if diet == 'High' else 1
-    lifestyle_map = {'Athlete': 0, 'Active': 1, 'Moderate': 2, 'Sedentary': 3}
-    lifestyle = lifestyle_map[lifestyle]
-    cholesterol_map = {'High': 0, 'Borderline': 1, 'Normal': 2}
-    cholesterol = cholesterol_map[cholesterol]
+# Get user input
+user_input = get_user_input()
 
-    # Perform inference
-    try:
-        q = HeartDisease_infer.query(variables=['heartdisease'], evidence={
-            'age': age,
-            'Gender': gender,
-            'Family': family_history,
-            'diet': diet,
-            'Lifestyle': lifestyle,
-            'cholestrol': cholesterol
-        })
+# Predicting the output
+prediction = knn_classifier.predict(user_input)
+prediction_proba = knn_classifier.predict_proba(user_input)
 
-        # Display prediction result
-        if q:
-            max_prob_state = q.values.argmax()  # Get the index of the state with the highest probability
-            st.write('Prediction:', 'Yes' if max_prob_state == 1 else 'No')
-        else:
-            st.write('No prediction available.')
+# Displaying the user input and prediction
+st.subheader('User Input Parameters')
+st.write(df)
+st.subheader('Prediction')
+st.write(iris_data['target_names'][prediction][0])
 
-    except Exception as e:
-        st.error(f"An error occurred during inference: {e}")
-
-if __name__ == '__main__':
-    main()
+# Display the probability of each class
+st.subheader('Prediction Probability')
+st.write(iris_data['target_names'][0], prediction_proba[0][0])
