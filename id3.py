@@ -1,10 +1,8 @@
-
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.datasets import load_iris
-from sklearn.tree import export_text
+from sklearn.tree import DecisionTreeClassifier, export_text
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 # Define the Streamlit app
 def main():
@@ -12,37 +10,47 @@ def main():
 
     # Upload dataset
     st.subheader("Upload Dataset")
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
+
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
         st.write(data)
 
-        # Preprocessing: Convert categorical variables into numerical
-        data = pd.get_dummies(data)
+        # Choose target column
+        target_column = st.selectbox("Select the target column", data.columns)
 
-        # Model Training
-        st.subheader("Training")
-        X = data.drop(columns=['target'])
-        y = data['target']
+        # Split data into features and target
+        X = data.drop(columns=[target_column])
+        y = data[target_column]
+
+        # Train-test split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Create decision tree model
         clf = DecisionTreeClassifier(criterion="entropy")
-        clf.fit(X, y)
+        clf.fit(X_train, y_train)
 
         # Display decision tree rules
         st.subheader("Decision Tree Rules")
         rules = export_text(clf, feature_names=X.columns.tolist())
         st.text_area("Decision Tree Rules", rules, height=300)
 
-        # Make a prediction
-        st.subheader("Make Prediction")
-        input_features = {}
+        # Make predictions
+        st.subheader("Make Predictions")
+        new_data = {}
         for feature in X.columns:
-            input_features[feature] = st.number_input(f"Enter {feature}", value=0.0)
+            new_data[feature] = st.number_input(f"Enter {feature}", value=0.0)
 
         if st.button("Predict"):
-            instance = pd.DataFrame([input_features])
+            instance = pd.DataFrame([new_data])
             prediction = clf.predict(instance)
             st.success(f"The predicted class is {prediction[0]}")
 
+        # Evaluate model
+        st.subheader("Model Evaluation")
+        accuracy = accuracy_score(y_test, clf.predict(X_test))
+        st.write(f"Accuracy: {accuracy:.2f}")
+
 # Run the app
-if __name__ == "__main__":
-    main()
+if _name_ == "_main_":
+    main()
