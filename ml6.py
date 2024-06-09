@@ -1,13 +1,7 @@
 import subprocess
 import sys
-import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 
+# Function to install packages
 def install_and_import(package):
     try:
         __import__(package)
@@ -16,10 +10,20 @@ def install_and_import(package):
     finally:
         globals()[package] = __import__(package)
 
+# Install required packages
 install_and_import('streamlit')
 install_and_import('pandas')
 install_and_import('numpy')
 install_and_import('sklearn')
+
+# Importing packages after ensuring they are installed
+import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 
 def main():
     st.title('Sentiment Analysis with Naive Bayes Classifier')
