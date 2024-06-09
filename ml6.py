@@ -1,10 +1,22 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
+import subprocess
+import sys
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+try:
+    import streamlit as st
+    import pandas as pd
+    import numpy as np
+    from sklearn.model_selection import train_test_split
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.naive_bayes import MultinomialNB
+    from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
+except ModuleNotFoundError as e:
+    package = str(e).split("'")[1]
+    st.error(f"Module {package} not found. Attempting to install...")
+    install(package)
+    st.experimental_rerun()
 
 def main():
     st.title('Sentiment Analysis with Naive Bayes Classifier')
