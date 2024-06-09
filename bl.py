@@ -28,7 +28,7 @@ class NeuralNetwork:
 
 # Streamlit app
 def main():
-    st.title("TEAM:Cyber - Centurions")
+    st.title("TEAM: Cyber - Centurions")
     st.subheader("TOPIC: Neural Network class with backpropagation algorithm")
 
     # Initialize neural network
