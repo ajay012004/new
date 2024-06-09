@@ -1,94 +1,70 @@
-import subprocess
-import sys
-
-# Function to install packages
-def install_and_import(package):
-    try:
-        __import__(package)
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    finally:
-        globals()[package] = __import__(package)
-
-# Install required packages
-install_and_import('streamlit')
-install_and_import('pandas')
-install_and_import('numpy')
-install_and_import('sklearn')
-
-# Importing packages after ensuring they are installed
 import streamlit as st
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelEncoder
 
-def main():
-    st.title('Sentiment Analysis with Naive Bayes Classifier')
+# Streamlit app title
+st.title("Heart Disease Prediction using Logistic Regression")
 
-    # Default file path
-    default_file_path = 'document.csv'
+# Upload CSV file
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
-    # File uploader for user to upload CSV file
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+if uploaded_file is not None:
+    # Load data from CSV
+    heart_disease = pd.read_csv(uploaded_file)
+    st.write("The first 5 values of the dataset:")
+    st.write(heart_disease.head())
 
-    try:
-        if uploaded_file is not None:
-            # Read the CSV file from uploader
-            msg = pd.read_csv(uploaded_file, names=['message', 'label'])
-        else:
-            # Read the CSV file from default path
-            msg = pd.read_csv(default_file_path, names=['message', 'label'])
+    # Preprocess the data
+    label_encoders = {}
+    categorical_columns = ['age', 'Gender', 'Family', 'diet', 'Lifestyle', 'cholestrol']
+    for column in categorical_columns:
+        le = LabelEncoder()
+        heart_disease[column] = le.fit_transform(heart_disease[column])
+        label_encoders[column] = le
 
-        st.write("Total Instances of Dataset:", msg.shape[0])
+    # Split the data into training and testing sets
+    X = heart_disease.drop('heartdisease', axis=1)
+    y = heart_disease['heartdisease']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Map labels to numerical values
-        msg['labelnum'] = msg.label.map({'pos': 1, 'neg': 0})
+    # Train a logistic regression model
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
 
-        # Split data into train and test sets
-        X = msg.message
-        y = msg.labelnum
-        Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.2, random_state=42)
+    # User inputs
+    st.write('### Enter the following details:')
+    
+    age = st.selectbox('Age', ['SuperSeniorCitizen', 'SeniorCitizen', 'MiddleAged', 'Youth', 'Teen'])
+    gender = st.selectbox('Gender', ['Male', 'Female'])
+    family_history = st.selectbox('Family History', ['Yes', 'No'])
+    diet = st.selectbox('Diet', ['High', 'Medium'])
+    lifestyle = st.selectbox('Lifestyle', ['Athlete', 'Active', 'Moderate', 'Sedentary'])
+    cholestrol = st.selectbox('Cholestrol', ['High', 'BorderLine', 'Normal'])
 
-        # Check for NaN or infinite values in ytrain and remove them
-        mask = ~pd.isnull(ytrain) & ~pd.isnull(Xtrain)
-        Xtrain = Xtrain[mask]
-        ytrain = ytrain[mask]
+    # Convert user inputs to appropriate format
+    user_input = pd.DataFrame({
+        'age': [age],
+        'Gender': [gender],
+        'Family': [family_history],
+        'diet': [diet],
+        'Lifestyle': [lifestyle],
+        'cholestrol': [cholestrol]
+    })
+    
+    for column in user_input.columns:
+        user_input[column] = label_encoders[column].transform(user_input[column])
 
-        # Vectorize the text data
-        count_v = CountVectorizer()
-        Xtrain_dm = count_v.fit_transform(Xtrain)
-        Xtest_dm = count_v.transform(Xtest)
+    # Predict heart disease
+    if st.button("Predict"):
+        prediction = model.predict(user_input)
+        prediction_proba = model.predict_proba(user_input)
 
-        # Convert to DataFrame for display
-        df = pd.DataFrame(Xtrain_dm.toarray(), columns=count_v.get_feature_names_out())
-        st.write("Sample of Vectorized Training Data:")
-        st.write(df.head())
-
-        # Train Naive Bayes classifier
-        clf = MultinomialNB()
-        clf.fit(Xtrain_dm, ytrain)
-        pred = clf.predict(Xtest_dm)
-
-        # Display sample predictions
-        st.write('Sample Predictions:')
-        for doc, p in zip(Xtest, pred):
-            p = 'pos' if p == 1 else 'neg'
-            st.write(f"{doc} -> {p}")
-
-        # Display accuracy metrics
-        st.write('Accuracy Metrics:')
-        st.write('Accuracy:', accuracy_score(ytest, pred))
-        st.write('Recall:', recall_score(ytest, pred))
-        st.write('Precision:', precision_score(ytest, pred))
-        st.write('Confusion Matrix:\n', confusion_matrix(ytest, pred))
-
-    except FileNotFoundError:
-        st.error(f"Default file path '{default_file_path}' not found.")
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-
-if __name__ == '__main__':
-    main()
+        # Display the prediction
+        st.write("Prediction for Heart Disease:")
+        st.write('Yes' if prediction[0] == 1 else 'No')
+        st.write("Prediction Probability:")
+        st.write(f'No: {prediction_proba[0][0]:.2f}, Yes: {prediction_proba[0][1]:.2f}')
+else:
+    st.write("Please upload a CSV file to proceed.")
