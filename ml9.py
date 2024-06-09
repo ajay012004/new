@@ -2,18 +2,18 @@ import subprocess
 import sys
 
 # Function to install packages
-def install_and_import(package):
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# List of required packages
+required_packages = ['streamlit', 'scikit-learn', 'numpy']
+
+# Install required packages if not already installed
+for package in required_packages:
     try:
         __import__(package)
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    finally:
-        globals()[package] = __import__(package)
-
-# Install required packages
-install_and_import('streamlit')
-install_and_import('sklearn')
-install_and_import('numpy')
+        install(package)
 
 # Importing packages after ensuring they are installed
 import streamlit as st
