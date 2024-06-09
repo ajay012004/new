@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import load_iris
 from sklearn.tree import export_text
 
 # Define the Streamlit app
 def main():
-    st.title("TEAM:Cyber centurions")
-    st.subheader("TOPIC:ID3 Algorithm Demo")
+    st.title("ID3 Algorithm Demo")
 
     # Upload dataset
     st.subheader("Upload Dataset")
