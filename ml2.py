@@ -1,11 +1,9 @@
-
 import streamlit as st
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier, export_text
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-# Define the Streamlit app
 def main():
     st.title("ID3 Algorithm Demo")
 
@@ -14,44 +12,58 @@ def main():
     uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
     if uploaded_file is not None:
-        data = pd.read_csv(uploaded_file)
-        st.write(data)
+        try:
+            data = pd.read_csv(uploaded_file)
+            st.write(data)
 
-        # Choose target column
-        target_column = st.selectbox("Select the target column", data.columns)
+            # Choose target column
+            target_column = st.selectbox("Select the target column", data.columns)
 
-        # Split data into features and target
-        X = data.drop(columns=[target_column])
-        y = data[target_column]
+            # Check for missing values
+            if data.isnull().values.any():
+                st.warning("Dataset contains missing values. Please preprocess the data before proceeding.")
+                return
 
-        # Train-test split
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            # Check for non-numeric columns
+            non_numeric_cols = data.select_dtypes(exclude=['number']).columns.tolist()
+            if non_numeric_cols:
+                st.warning(f"The following non-numeric columns were detected: {', '.join(non_numeric_cols)}. Please preprocess the data before proceeding.")
+                return
 
-        # Create decision tree model
-        clf = DecisionTreeClassifier(criterion="entropy")
-        clf.fit(X_train, y_train)
+            # Split data into features and target
+            X = data.drop(columns=[target_column])
+            y = data[target_column]
 
-        # Display decision tree rules
-        st.subheader("Decision Tree Rules")
-        rules = export_text(clf, feature_names=X.columns.tolist())
-        st.text_area("Decision Tree Rules", rules, height=300)
+            # Train-test split
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Make predictions
-        st.subheader("Make Predictions")
-        new_data = {}
-        for feature in X.columns:
-            new_data[feature] = st.number_input(f"Enter {feature}", value=0.0)
+            # Create decision tree model
+            clf = DecisionTreeClassifier(criterion="entropy")
+            clf.fit(X_train, y_train)
 
-        if st.button("Predict"):
-            instance = pd.DataFrame([new_data])
-            prediction = clf.predict(instance)
-            st.success(f"The predicted class is {prediction[0]}")
+            # Display decision tree rules
+            st.subheader("Decision Tree Rules")
+            rules = export_text(clf, feature_names=X.columns.tolist())
+            st.text_area("Decision Tree Rules", rules, height=300)
 
-        # Evaluate model
-        st.subheader("Model Evaluation")
-        accuracy = accuracy_score(y_test, clf.predict(X_test))
-        st.write(f"Accuracy: {accuracy:.2f}")
+            # Make predictions
+            st.subheader("Make Predictions")
+            new_data = {}
+            for feature in X.columns:
+                new_data[feature] = st.number_input(f"Enter {feature}", value=0.0)
 
-# Run the app
+            if st.button("Predict"):
+                instance = pd.DataFrame([new_data])
+                prediction = clf.predict(instance)
+                st.success(f"The predicted class is {prediction[0]}")
+
+            # Evaluate model
+            st.subheader("Model Evaluation")
+            accuracy = accuracy_score(y_test, clf.predict(X_test))
+            st.write(f"Accuracy: {accuracy:.2f}")
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+
 if __name__ == "__main__":
     main()
