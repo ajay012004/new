@@ -25,7 +25,7 @@ def find_s_algorithm(data):
 
 # Streamlit app
 st.title(" TITTLE: Cyber centurions")
-st,subheater("TOPIC: Find-S Algorithm")
+st.subheater("TOPIC: Find-S Algorithm")
 st.write("This app runs the Find-S algorithm to find the maximally specific hypothesis from given training data.")
 
 # File uploader
