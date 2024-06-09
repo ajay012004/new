@@ -72,7 +72,7 @@ def predict(tree, X):
 
 # Main Streamlit app
 def main():
-    st.title(' Cybe Centurions ID3 Algorithm Demo')
+    st.title(' Cybe Centurions - ID3 Algorithm Demo')
     
     # Dummy dataset
     X = np.array([[2, 3], [1, 2], [3, 1], [4, 2], [3, 5], [6, 5]])
