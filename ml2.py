@@ -3,7 +3,7 @@ import numpy as np
 
 # Node class for the decision tree
 class Node:
-    def _init_(self, feature=None, threshold=None, left=None, right=None, value=None):
+    def __init__(self, feature=None, threshold=None, left=None, right=None, value=None):
         self.feature = feature          # Index of feature to split on
         self.threshold = threshold      # Threshold value for numerical features
         self.left = left                # Left subtree
@@ -72,7 +72,7 @@ def predict(tree, X):
 
 # Main Streamlit app
 def main():
-    st.title(' Cybe Centurions - ID3 Algorithm Demo')
+    st.title('Cybe Centurions - ID3 Algorithm Demo')
     
     # Dummy dataset
     X = np.array([[2, 3], [1, 2], [3, 1], [4, 2], [3, 5], [6, 5]])
@@ -89,5 +89,5 @@ def main():
     prediction = predict(tree, test_point)
     st.write(f'Prediction for test point {test_point}: Class {prediction}')
 
-if _name_ == '_main_':
-    main()
+if __name__ == '__main__':
+    main()
