@@ -1,3 +1,21 @@
+import subprocess
+import sys
+
+# Function to install packages
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# List of required packages
+required_packages = ['streamlit', 'pandas', 'scikit-learn']
+
+# Install required packages if not already installed
+for package in required_packages:
+    try:
+        __import__(package)
+    except ImportError:
+        install(package)
+
+# Importing packages after ensuring they are installed
 import streamlit as st
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -67,4 +85,4 @@ if uploaded_file is not None:
         st.write("Prediction Probability:")
         st.write(f'No: {prediction_proba[0][0]:.2f}, Yes: {prediction_proba[0][1]:.2f}')
 else:
-    st.write("Please upload a CSV file to proceed.")
+    st.write("Please upload a CSV file to proceed.")
