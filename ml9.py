@@ -20,7 +20,7 @@ def locally_weighted_regression(X, y, x_query, tau):
     return np.dot(x_query_, theta)
 
 # Streamlit App
-st.title("CLOUD STROMS - Locally Weighted Regression")
+st.title("CYBER CENTURIONS - Locally Weighted Regression")
 
 # Upload dataset
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
