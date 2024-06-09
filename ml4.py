@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 
@@ -72,4 +71,4 @@ def main():
         st.write(loss)
 
 if _name_ == '_main_':
-    main()
+    main()
