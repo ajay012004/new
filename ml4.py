@@ -3,7 +3,7 @@ import numpy as np
 
 # Define the neural network class
 class Neural_Network(object):
-    def _init_(self):
+    def __init__(self):  # Corrected the init method definition
         self.inputSize = 2
         self.outputSize = 1
         self.hiddenSize = 3
@@ -70,5 +70,5 @@ def main():
         st.write("### Loss:")
         st.write(loss)
 
-if _name_ == '_main_':
-    main()
+if __name__ == '__main__':  # Corrected the name and main function check
+    main()
