@@ -61,5 +61,5 @@ def main():
 
     plot_clusters(X, kmeans_labels, kmeans_centers, 'K-means Clustering', 'Feature 1', 'Feature 2')
 
-if _name_ == '_main_':
-    main()
+if __name__ == '__main__':
+    main()
