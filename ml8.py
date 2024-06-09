@@ -1,59 +1,50 @@
-
+Updates to keyboard shortcuts … On Thursday, August 1, 2024, Drive keyboard shortcuts will be updated to give you first-letters navigation.Learn more
 import streamlit as st
-from sklearn.cluster import KMeans
-from sklearn import preprocessing
-from sklearn.mixture import GaussianMixture
-from sklearn.datasets import load_iris
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+import csv
 
-# Function to plot the figures
-def plot_clusters(X, y, predY, y_cluster_gmm):
-    colormap = np.array(['red', 'lime', 'black'])
+def find_s_algorithm(data):
+    hypo = ['%', '%', '%', '%', '%', '%']
+    positive_examples = []
+
+    for row in data:
+        if row[len(row) - 1].upper() == "YES":
+            positive_examples.append(row)
+
+    TotalExamples = len(positive_examples)
+    d = len(positive_examples[0]) - 1
+
+    hypo = positive_examples[0][:d]
+
+    for i in range(1, TotalExamples):
+        for k in range(d):
+            if hypo[k] != positive_examples[i][k]:
+                hypo[k] = '?'
+
+    return hypo, positive_examples
+
+# Streamlit app
+st.title("Find-S Algorithm")
+st.write("This app runs the Find-S algorithm to find the maximally specific hypothesis from given training data.")
+
+# File uploader
+uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
+
+if uploaded_file is not None:
+    data = list(csv.reader(uploaded_file))
     
-    # Create a figure with three subplots
-    fig, axs = plt.subplots(1, 3, figsize=(21, 7))
-    
-    # REAL PLOT
-    axs[0].scatter(X.Petal_Length, X.Petal_Width, c=colormap[y.Targets], s=40)
-    axs[0].set_title('Real')
+    st.write("### The given training examples are:")
+    st.write(pd.DataFrame(data))
 
-    # K-PLOT
-    axs[1].scatter(X.Petal_Length, X.Petal_Width, c=colormap[predY], s=40)
-    axs[1].set_title('KMeans')
+    hypo, positive_examples = find_s_algorithm(data)
 
-    # GMM PLOT
-    axs[2].scatter(X.Petal_Length, X.Petal_Width, c=colormap[y_cluster_gmm], s=40)
-    axs[2].set_title('GMM Classification')
-    
-    return fig
+    st.write("### The positive examples are:")
+    st.write(pd.DataFrame(positive_examples))
 
-def main():
-    st.title('Iris Dataset Clustering')
+    st.write("### The steps of the Find-S algorithm are:")
+    st.write(hypo)
 
-    dataset = load_iris()
-
-    X = pd.DataFrame(dataset.data)
-    X.columns = ['Sepal_Length', 'Sepal_Width', 'Petal_Length', 'Petal_Width']
-    y = pd.DataFrame(dataset.target)
-    y.columns = ['Targets']
-
-    model = KMeans(n_clusters=3)
-    model.fit(X)
-    predY = np.choose(model.labels_, [0, 1, 2]).astype(np.int64)
-
-    scaler = preprocessing.StandardScaler()
-    scaler.fit(X)
-    xsa = scaler.transform(X)
-    xs = pd.DataFrame(xsa, columns=X.columns)
-    gmm = GaussianMixture(n_components=3)
-    gmm.fit(xs)
-    y_cluster_gmm = gmm.predict(xs)
-
-    st.write("### Clustering of Iris Dataset")
-    fig = plot_clusters(X, y, predY, y_cluster_gmm)
-    st.pyplot(fig)
-
-if __name__ == "__main__":
-    main()
+    st.write("### The maximally specific Find-S hypothesis for the given training examples is:")
+    st.write(hypo)
+else:
+    st.write("Please upload a CSV file.")
