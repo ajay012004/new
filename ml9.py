@@ -1,52 +1,63 @@
-import subprocess
-import sys
-
-# Function to install packages
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-# List of required packages
-required_packages = ['streamlit', 'scikit-learn', 'numpy']
-
-# Install required packages if not already installed
-for package in required_packages:
-    try:
-        __import__(package)
-    except ImportError:
-        install(package)
-
-# Importing packages after ensuring they are installed
-import streamlit as st
-from sklearn.datasets import load_iris
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
 import numpy as np
+import pandas as pd
+import streamlit as st
 
-def main():
-    st.title("Iris Dataset K-Nearest Neighbors Classifier")
+# Function to compute weights
+def get_weights(X, x_query, tau):
+    m = X.shape[0]
+    W = np.eye(m)
+    for i in range(m):
+        xi = X[i]
+        W[i, i] = np.exp(-np.dot((xi - x_query), (xi - x_query).T) / (2 * tau ** 2))
+    return W
 
-    # Load the Iris dataset
-    dataset = load_iris()
-    X_train, X_test, y_train, y_test = train_test_split(dataset["data"], dataset["target"], random_state=0)
+# Locally Weighted Regression function
+def locally_weighted_regression(X, y, x_query, tau):
+    X_ = np.c_[np.ones((X.shape[0], 1)), X]  # Add intercept term
+    x_query_ = np.r_[1, x_query]  # Add intercept term
+    W = get_weights(X_, x_query_, tau)
+    theta = np.linalg.pinv(X_.T @ W @ X_) @ (X_.T @ W @ y)
+    return np.dot(x_query_, theta)
 
-    # Train the K-Nearest Neighbors classifier
-    kn = KNeighborsClassifier(n_neighbors=1)
-    kn.fit(X_train, y_train)
+# Streamlit App
+st.title("CLOUD STROMS - Locally Weighted Regression")
 
-    # Display the test samples and their predicted and actual labels
-    st.write("## Test Sample Predictions")
-    for i in range(len(X_test)):
-        x = X_test[i]
-        x_new = np.array([x])
-        prediction = kn.predict(x_new)
-        st.write(f"Sample {i+1}:")
-        st.write(f"  - Target: {y_test[i]} ({dataset['target_names'][y_test[i]]})")
-        st.write(f"  - Predicted: {prediction[0]} ({dataset['target_names'][prediction[0]]})")
+# Upload dataset
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+if uploaded_file is not None:
+    data = pd.read_csv(uploaded_file)
+    st.write(data.head())
 
-    # Display the model accuracy
-    accuracy = kn.score(X_test, y_test)
-    st.write("## Model Accuracy")
-    st.write(f"The accuracy of the K-Nearest Neighbors classifier is: {accuracy:.2f}")
+    # Select feature and target columns
+    feature_col = st.selectbox("Select Feature Column", data.columns)
+    target_col = st.selectbox("Select Target Column", data.columns)
 
-if __name__ == '__main__':
-    main()
+    # Get X and y values
+    X = data[[feature_col]].values
+    y = data[target_col].values
+
+    # Input value for bandwidth parameter tau
+    tau = st.slider("Select Tau (Bandwidth)", 0.01, 1.0, 0.1)
+
+    # Generate predictions
+    X_test = np.linspace(X.min(), X.max(), 300).reshape(-1, 1)
+    y_pred = [locally_weighted_regression(X, y, x_query, tau) for x_query in X_test]
+
+    # Prepare data for plotting
+    plot_data = pd.DataFrame({
+        feature_col: X_test.flatten(),
+        'LWR Fit': np.array(y_pred).flatten()
+    })
+
+    # Plotting
+    st.line_chart(plot_data.rename(columns={'LWR Fit': target_col}), x=feature_col, y=target_col)
+    scatter_data = pd.DataFrame({
+        feature_col: X.flatten(),
+        target_col: y.flatten()
+    })
+    st.scatter_chart(scatter_data)
+
+    st.write("### Combined Plot")
+    combined_data = pd.concat([plot_data.set_index(feature_col), scatter_data.set_index(feature_col)], axis=1).reset_index()
+    combined_data.columns = [feature_col, 'LWR Fit', 'Actual']  # Rename columns to avoid conflicts
+    st.line_chart(combined_data, x=feature_col, y=['LWR Fit', 'Actual'])  # Corrected line
