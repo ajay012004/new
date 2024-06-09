@@ -1,88 +1,65 @@
-import subprocess
-import sys
+Updates to keyboard shortcuts … On Thursday, August 1, 2024, Drive keyboard shortcuts will be updated to give you first-letters navigation.Learn more
+import pandas as pd
+import streamlit as st
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+# Streamlit app
+st.title("Document Classifier")
+st.write("This app classifies text documents using a Multinomial Naive Bayes classifier.")
 
-try:
-    import streamlit as st
-    import pandas as pd
-    import numpy as np
-    from sklearn.model_selection import train_test_split
-    from sklearn.feature_extraction.text import CountVectorizer
-    from sklearn.naive_bayes import MultinomialNB
-    from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
-except ModuleNotFoundError as e:
-    package = str(e).split("'")[1]
-    st.error(f"Module {package} not found. Attempting to install...")
-    install(package)
-    st.experimental_rerun()
+# File uploader
+uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
 
-def main():
-    st.title('Sentiment Analysis with Naive Bayes Classifier')
-    
-    # Default file path
-    default_file_path = r"C:\Users\Asus\Documents\ml6\ml6\document (1).csv"
-    
-    # File uploader for user to upload CSV file
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    
-    try:
-        if uploaded_file is not None:
-            # Read the CSV file from uploader
-            msg = pd.read_csv(uploaded_file, names=['message', 'label'])
-        else:
-            # Read the CSV file from default path
-            msg = pd.read_csv(default_file_path, names=['message', 'label'])
-        
-        st.write("Total Instances of Dataset:", msg.shape[0])
-        
-        # Map labels to numerical values
-        msg['labelnum'] = msg.label.map({'pos': 1, 'neg': 0})
-        
-        # Split data into train and test sets
-        X = msg.message
-        y = msg.labelnum
-        Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.2, random_state=42)
-        
-        # Check for NaN or infinite values in ytrain and remove them
-        if np.isnan(ytrain).any() or np.isinf(ytrain).any():
-            mask = ~np.isnan(ytrain) & ~np.isinf(ytrain)
-            Xtrain = Xtrain[mask]
-            ytrain = ytrain[mask]
-        
-        # Vectorize the text data
-        count_v = CountVectorizer()
-        Xtrain_dm = count_v.fit_transform(Xtrain)
-        Xtest_dm = count_v.transform(Xtest)
-        
-        # Convert to DataFrame for display
-        df = pd.DataFrame(Xtrain_dm.toarray(), columns=count_v.get_feature_names_out())
-        st.write("Sample of Vectorized Training Data:")
-        st.write(df.head())
-        
-        # Train Naive Bayes classifier
-        clf = MultinomialNB()
-        clf.fit(Xtrain_dm, ytrain)
-        pred = clf.predict(Xtest_dm)
-        
-        # Display sample predictions
-        st.write('Sample Predictions:')
-        for doc, p in zip(Xtest, pred):
-            p = 'pos' if p == 1 else 'neg'
-            st.write(f"{doc} -> {p}")
-        
-        # Display accuracy metrics
-        st.write('Accuracy Metrics:')
-        st.write('Accuracy:', accuracy_score(ytest, pred))
-        st.write('Recall:', recall_score(ytest, pred))
-        st.write('Precision:', precision_score(ytest, pred))
-        st.write('Confusion Matrix:\n', confusion_matrix(ytest, pred))
-    
-    except FileNotFoundError:
-        st.error(f"Default file path '{default_file_path}' not found.")
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+if uploaded_file is not None:
+    # Load data
+    msg = pd.read_csv(uploaded_file, names=['message', 'label'])
+    st.write("Total Instances of Dataset: ", msg.shape[0])
+    st.write("### The first 5 values of data")
+    st.write(msg.head())
 
-if __name__ == '__main__':
-    main()
+    # Map labels to numbers
+    msg['labelnum'] = msg.label.map({'pos': 1, 'neg': 0})
+
+    X = msg.message
+    y = msg.labelnum
+
+    # Split the data
+    Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.20, random_state=42)
+
+    # Vectorize the data
+    count_v = CountVectorizer()
+    Xtrain_dm = count_v.fit_transform(Xtrain)
+    Xtest_dm = count_v.transform(Xtest)
+
+    df = pd.DataFrame(Xtrain_dm.toarray(), columns=count_v.get_feature_names_out())
+    st.write("### Feature Names and Sample Data")
+    st.write(df.head())
+
+    # Train the classifier
+    clf = MultinomialNB()
+    clf.fit(Xtrain_dm, ytrain)
+    pred = clf.predict(Xtest_dm)
+
+    # Display predictions
+    st.write("### Predictions")
+    for doc, p in zip(Xtest, pred):
+        p_label = 'pos' if p == 1 else 'neg'
+        st.write(f"{doc} -> {p_label}")
+
+    # Calculate and display accuracy metrics
+    accuracy = accuracy_score(ytest, pred)
+    recall = recall_score(ytest, pred)
+    precision = precision_score(ytest, pred)
+    confusion = confusion_matrix(ytest, pred)
+
+    st.write("### Accuracy Metrics")
+    st.write(f"Accuracy: {accuracy}")
+    st.write(f"Recall: {recall}")
+    st.write(f"Precision: {precision}")
+    st.write("Confusion Matrix:")
+    st.write(confusion)
+else:
+    st.write("Please upload a CSV file.")
