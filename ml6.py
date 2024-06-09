@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # Streamlit app title
-st.title("Heart Disease Prediction using Logistic Regression")
+st.title(" CYBER CENTURIONS-Heart Disease Prediction using Logistic Regression")
 
 # Upload CSV file
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
