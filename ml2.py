@@ -1,127 +1,56 @@
-import numpy as np
-import math
-import csv
+import streamlit as st
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier, export_text
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
-def read_data(filename):
-    with open(filename, 'r') as csvfile:
-        datareader = csv.reader(csvfile, delimiter=',')
-        headers = next(datareader)
-        metadata = []
-        traindata = []
-        for name in headers:
-            metadata.append(name)
-        for row in datareader:
-            traindata.append(row)
+# Define the Streamlit app
+def main():
+    st.title("ID3 Algorithm Demo")
 
-    return (metadata, traindata)
+    # Upload dataset
+    st.subheader("Upload Dataset")
+    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
-class Node:
-    def __init__(self, attribute):
-        self.attribute = attribute
-        self.children = []
-        self.answer = ""
-        
-    def __str__(self):
-        return self.attribute
+    if uploaded_file is not None:
+        data = pd.read_csv(uploaded_file)
+        st.write(data)
 
-def subtables(data, col, delete):
-    dict = {}
-    items = np.unique(data[:, col])
-    count = np.zeros((items.shape[0], 1), dtype=np.int32)    
-    
-    for x in range(items.shape[0]):
-        for y in range(data.shape[0]):
-            if data[y, col] == items[x]:
-                count[x] += 1
-                
-    for x in range(items.shape[0]):
-        dict[items[x]] = np.empty((int(count[x]), data.shape[1]), dtype="|S32")
-        pos = 0
-        for y in range(data.shape[0]):
-            if data[y, col] == items[x]:
-                dict[items[x]][pos] = data[y]
-                pos += 1       
-        if delete:
-            dict[items[x]] = np.delete(dict[items[x]], col, 1)
-        
-    return items, dict
+        # Choose target column
+        target_column = st.selectbox("Select the target column", data.columns)
 
-def entropy(S):
-    items = np.unique(S)
+        # Split data into features and target
+        X = data.drop(columns=[target_column])
+        y = data[target_column]
 
-    if items.size == 1:
-        return 0
-    
-    counts = np.zeros((items.shape[0], 1))
-    sums = 0
-    
-    for x in range(items.shape[0]):
-        counts[x] = sum(S == items[x]) / (S.size * 1.0)
+        # Train-test split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    for count in counts:
-        sums += -1 * count * math.log(count, 2)
-    return sums
+        # Create decision tree model
+        clf = DecisionTreeClassifier(criterion="entropy")
+        clf.fit(X_train, y_train)
 
-def gain_ratio(data, col):
-    items, dict = subtables(data, col, delete=False) 
-                
-    total_size = data.shape[0]
-    entropies = np.zeros((items.shape[0], 1))
-    intrinsic = np.zeros((items.shape[0], 1))
-    
-    for x in range(items.shape[0]):
-        ratio = dict[items[x]].shape[0]/(total_size * 1.0)
-        entropies[x] = ratio * entropy(dict[items[x]][:, -1])
-        intrinsic[x] = ratio * math.log(ratio, 2)
-        
-    total_entropy = entropy(data[:, -1])
-    iv = -1 * sum(intrinsic)
-    
-    for x in range(entropies.shape[0]):
-        total_entropy -= entropies[x]
-        
-    return total_entropy / iv
+        # Display decision tree rules
+        st.subheader("Decision Tree Rules")
+        rules = export_text(clf, feature_names=X.columns.tolist())
+        st.text_area("Decision Tree Rules", rules, height=300)
 
-def create_node(data, metadata):
-    if (np.unique(data[:, -1])).shape[0] == 1:
-        node = Node("")
-        node.answer = np.unique(data[:, -1])[0]
-        return node
-        
-    gains = np.zeros((data.shape[1] - 1, 1))
-    
-    for col in range(data.shape[1] - 1):
-        gains[col] = gain_ratio(data, col)
-        
-    split = np.argmax(gains)
-    
-    node = Node(metadata[split])    
-    metadata = np.delete(metadata, split, 0)    
-    
-    items, dict = subtables(data, split, delete=True)
-    
-    for x in range(items.shape[0]):
-        child = create_node(dict[items[x]], metadata)
-        node.children.append((items[x], child))
-    
-    return node
+        # Make predictions
+        st.subheader("Make Predictions")
+        new_data = {}
+        for feature in X.columns:
+            new_data[feature] = st.number_input(f"Enter {feature}", value=0.0)
 
-def empty(size):
-    s = ""
-    for x in range(size):
-        s += "   "
-    return s
+        if st.button("Predict"):
+            instance = pd.DataFrame([new_data])
+            prediction = clf.predict(instance)
+            st.success(f"The predicted class is {prediction[0]}")
 
-def print_tree(node, level):
-    if node.answer != "":
-        print(empty(level), node.answer)
-        return
-    print(empty(level), node.attribute)
-    for value, n in node.children:
-        print(empty(level + 1), value)
-        print_tree(n, level + 2)
+        # Evaluate model
+        st.subheader("Model Evaluation")
+        accuracy = accuracy_score(y_test, clf.predict(X_test))
+        st.write(f"Accuracy: {accuracy:.2f}")
 
-metadata, traindata = read_data("tennisdata.csv")
-data = np.array(traindata)
-node = create_node(data, metadata)
-print_tree(node, 0)
+# Run the app
+if __name__ == "__main__":
+    main()
