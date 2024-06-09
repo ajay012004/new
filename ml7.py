@@ -1,6 +1,4 @@
 import streamlit as st
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 
@@ -25,16 +23,9 @@ iris_data = {
 # Create a DataFrame
 df = pd.DataFrame(data=iris_data['data'], columns=['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(iris_data['data'], iris_data['target'], test_size=0.2, random_state=42)
-
-# Initialize the KNN classifier
-k = 3
-knn_classifier = KNeighborsClassifier(n_neighbors=k)
-knn_classifier.fit(X_train, y_train)
-
 # Streamlit app
-st.title('Iris Flower Species Prediction')
+st.title('Cloud Storms')
+st.header('Iris Flower Species Prediction')
 st.sidebar.header('User Input Parameters')
 
 # Function to get user inputs
@@ -49,15 +40,17 @@ def get_user_input():
 user_input = get_user_input()
 
 # Predicting the output
-prediction = knn_classifier.predict(user_input)
-prediction_proba = knn_classifier.predict_proba(user_input)
+def predict(user_input):
+    distances = np.sqrt(np.sum((iris_data['data'] - user_input)**2, axis=1))
+    nearest_neighbor = np.argmin(distances)
+    prediction = iris_data['target'][nearest_neighbor]
+    return prediction
+
+# Predicting the output
+prediction = predict(user_input)
 
 # Displaying the user input and prediction
 st.subheader('User Input Parameters')
 st.write(df)
 st.subheader('Prediction')
 st.write(iris_data['target_names'][prediction][0])
-
-# Display the probability of each class
-st.subheader('Prediction Probability')
-st.write(iris_data['target_names'][0], prediction_proba[0][0])
